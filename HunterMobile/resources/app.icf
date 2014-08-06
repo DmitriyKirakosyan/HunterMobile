@@ -1,5 +1,6 @@
 [S3E]
 MemMgrMaxAllocWarning=0
+DispFixRot=FixedLandscape
 
 [GL]
 
