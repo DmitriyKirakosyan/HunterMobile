@@ -1,6 +1,7 @@
 print('init application')
 
 local speed = 1
+local enemy_max_count = 10
 
 application:setOrientation(Application.LANDSCAPE_LEFT) 
 local displayWidth = application:getContentWidth()
@@ -10,12 +11,32 @@ local end_point_x, end_point_y
 
 print('w:' .. displayWidth .. ' h:' .. displayHeight)
 
+print('add hunter')
+
 local hunter_bitmap = Bitmap.new(Texture.new('res/Skull.png'))
 
 hunter_bitmap:setX( displayWidth / 2 )
 hunter_bitmap:setY( displayHeight / 2 )
 
 stage:addChild(hunter_bitmap)
+
+print('add enemy')
+
+local enemy_table = {}
+
+for i = 1, enemy_max_count do
+
+  local enemy =  { x = math.random() * displayWidth, y = math.random() * displayHeight };
+  enemy.bitmap = Bitmap.new(Texture.new('res/Skull.png'))
+  enemy.bitmap:setX(enemy.x)
+  enemy.bitmap:setY(enemy.y)
+  enemy.bitmap:setColorTransform(1,0,0)
+  stage:addChild(enemy.bitmap)
+
+  table.insert(enemy_table, enemy)
+
+end
+
 
 print('set listeners')
 
@@ -48,8 +69,33 @@ function move_hunter()
   hunter_bitmap:setY(hunter_bitmap:getY() + vy)
 end
 
+function check_intersection()
+  if hunter_bitmap == nil then
+    return
+  end
+  local hx, hy, hw, hh = hunter_bitmap:getBounds(stage)
+  for _,enemy in pairs(enemy_table) do
+    local ex, ey, ew, eh = enemy.bitmap:getBounds(stage)
+    if (
+        ((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) or
+        (((ex + ew) > hx and (ex + ew) < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) 
+      ) then
+      --hunter_bitmap:setAlpha( hunter_bitmap:getAlpha() - 1)
+      --enemy.bitmap:setAlpha(0.5)
+      enemy.bitmap:setColorTransform(0, 0.5, 0)
+    end
+
+    --[[
+    if  ((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) then
+      enemy.bitmap:setColorTransform(0, 0.5, 0)
+    end
+    ]]--
+  end
+end
+
 function on_enter_frame(ev)
   move_hunter()
+  check_intersection()
 end
 
 stage:addEventListener('touchesMove', on_stage_touch)
