@@ -37,7 +37,6 @@ for i = 1, enemy_max_count do
 
 end
 
-
 print('set listeners')
 
 function on_stage_touch(ev) 
@@ -80,16 +79,9 @@ function check_intersection()
         ((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) or
         (((ex + ew) > hx and (ex + ew) < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) 
       ) then
-      --hunter_bitmap:setAlpha( hunter_bitmap:getAlpha() - 1)
-      --enemy.bitmap:setAlpha(0.5)
       enemy.bitmap:setColorTransform(0, 0.5, 0)
     end
 
-    --[[
-    if  ((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) then
-      enemy.bitmap:setColorTransform(0, 0.5, 0)
-    end
-    ]]--
   end
 end
 
