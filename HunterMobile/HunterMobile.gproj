@@ -6,6 +6,7 @@
   <file source="res/Skull.png"/>
  </folder>
  <folder name="src">
+  <file source="fsm.lua"/>
   <file source="main.lua"/>
  </folder>
 </project>

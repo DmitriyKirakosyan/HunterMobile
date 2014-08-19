@@ -4,8 +4,10 @@ print('init application')
 local speed = 1
 local enemy_max_count = 10
 local stone = {}
-
 stone.speed = 2
+
+local enemy_mother = {}
+local enemy_table = {}
 
 application:setOrientation(Application.LANDSCAPE_LEFT) 
 local displayWidth = application:getContentWidth()
@@ -30,23 +32,6 @@ stone.bitmap:setScaleX(0.2)
 stone.bitmap:setScaleY(0.2)
 stone.bitmap:setVisible(false)
 stage:addChild(stone.bitmap)
-
-print('add enemy')
-
-local enemy_table = {}
-
-for i = 1, enemy_max_count do
-
-  local enemy =  { x = math.random() * displayWidth, y = math.random() * displayHeight };
-  enemy.bitmap = Bitmap.new(Texture.new('res/Skull.png'))
-  enemy.bitmap:setX(enemy.x)
-  enemy.bitmap:setY(enemy.y)
-  enemy.bitmap:setColorTransform(1,0,0)
-  stage:addChild(enemy.bitmap)
-
-  table.insert(enemy_table, enemy)
-
-end
 
 
 function on_stage_touch(ev) 
@@ -82,16 +67,23 @@ function check_intersection()
   if hunter_bitmap == nil then
     return
   end
-  local hx, hy, hw, hh = hunter_bitmap:getBounds(stage)
-  for _,enemy in pairs(enemy_table) do
+  --local hx, hy, hw, hh = hunter_bitmap:getBounds(stage)
+  local hx, hy, hw, hh = stone.bitmap:getBounds(stage)
+  for i,enemy in pairs(enemy_table) do
     local ex, ey, ew, eh = enemy.bitmap:getBounds(stage)
     if (
-        ((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) or
-        (((ex + ew) > hx and (ex + ew) < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) 
+        --((ex > hx and ex < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) or
+        --(((ex + ew) > hx and (ex + ew) < (hx + hw)) and ((ey > hy and ey < (hy + hh)) or ((ey + eh) > hy and (ey + eh) < (hy + hh)) )) 
+        (ex < hx and ex + ew > hx) and (ey < hy and ey + eh > hy) and 
+        (stone.state == "throwed")
       ) then
-      enemy.bitmap:setColorTransform(0, 0.5, 0)
+      --enemy.bitmap:setColorTransform(0, 0.5, 0)
+      stage:removeChild(enemy.bitmap)
+      table.remove(enemy_table, i)
+      enemy_mother.event = "enemy_dead"
+      stone.event = "falled"
+      break
     end
-
   end
 end
 
@@ -122,8 +114,10 @@ function find_nearest_enemy()
 
   --min_distance_enemy.bitmap:setColorTransform(0.5, 0.5, 0)
 
-  stone.finish_point_x = min_distance_enemy.bitmap:getX()
-  stone.finish_point_y = min_distance_enemy.bitmap:getY()
+  if (min_distance_enemy) then
+    stone.finish_point_x = min_distance_enemy.bitmap:getX() + (min_distance_enemy.bitmap:getWidth() / 2)
+    stone.finish_point_y = min_distance_enemy.bitmap:getY() + (min_distance_enemy.bitmap:getHeight() / 2)
+  end
 
   stone.event = "finded"
 
@@ -146,11 +140,13 @@ end
 
 function fly()
   --print("fly")
+  --[[
   if (math.abs(stone.bitmap:getX() - stone.finish_point_x) <= 1 and 
       math.abs(stone.bitmap:getY() - stone.finish_point_y) <= 1) then
       stone.event = "falled"
       return
     end
+    ]]--
 
   local dx = stone.finish_point_x - stone.bitmap:getX()
   local dy = stone.finish_point_y - stone.bitmap:getY()
@@ -171,6 +167,26 @@ end
 function wait()
 end
 
+function init_enemy()
+  --print('init_enemy')
+
+--  for i = 1, enemy_max_count do
+
+    local enemy =  { x = math.random() * displayWidth, y = math.random() * displayHeight };
+    enemy.current_fsm = enemy_mother.enemy_FSM["normal"]["init"]
+    enemy.event = "wait"
+    enemy.bitmap = Bitmap.new(Texture.new('res/Skull.png'))
+    enemy.bitmap:setX(enemy.x)
+    enemy.bitmap:setY(enemy.y)
+    enemy.bitmap:setColorTransform(1,0,0)
+    stage:addChild(enemy.bitmap)
+
+    table.insert(enemy_table, enemy)
+
+ -- end
+
+  enemy_mother.event = "none"
+end
 
 stone.FSM = FSM{
   {"empty", "none", "empty", wait},
@@ -183,10 +199,36 @@ stone.FSM = FSM{
 
 stone.current_fsm = stone.FSM["empty"]["created"]
 
+enemy_mother.FSM = FSM{
+  {"normal", "created", "normal", init_enemy},
+  {"normal", "none", "normal", wait},
+  {"normal", "enemy_dead", "normal", init_enemy},
+  {"normal", "timer_out", "normal", init_enemy}
+}
+
+enemy_mother.enemy_FSM = FSM {
+  {"normal", "init", "normal", wait},
+  {"normal", "wait", "normal", wait},
+  {"normal", "shoted", "normal", kill_me},
+  {"normal", "run", "normal", run_to_player}
+}
+
+enemy_mother.current_fsm = enemy_mother.FSM["normal"]["created"]
+
+
 function on_enter_frame(ev)
 
+  enemy_mother.current_fsm.action()
+  enemy_mother.state = enemy_mother.current_fsm.new
+  enemy_mother.current_fsm = enemy_mother.FSM[ enemy_mother.current_fsm.new ][ enemy_mother.event ]
+
+  for i, e in pairs(enemy_table) do
+    e.current_fsm.action()
+    e.current_fsm = enemy_mother.enemy_FSM[ e.current_fsm.new ][ e.event ]
+  end
+
+  --print('stone:', stone.state, stone.event )
   stone.current_fsm.action()
-  --print('state', stone.current_fsm.new, 'event', stone.event)
   stone.state = stone.current_fsm.new
   stone.current_fsm = stone.FSM[ stone.current_fsm.new ][ stone.event ]
 
@@ -200,11 +242,19 @@ function on_timer(ev)
   end
 end
 
+function on_timer_enemy_add_timer() 
+  enemy_mother.event = "timer_out"
+end
+
 print('set listeners')
 
 stone_throw_timer = Timer.new(100 * 10--[[ms]])
 stone_throw_timer:addEventListener('timer', on_timer)
 stone_throw_timer:start()
+
+enemy_add_timer = Timer.new(100 * 60--[[ms]])
+enemy_add_timer:addEventListener('timer', on_timer_enemy_add_timer)
+enemy_add_timer:start()
 
 stage:addEventListener('touchesMove', on_stage_touch)
 stage:addEventListener('touchesEnd', on_stage_touch_end)
