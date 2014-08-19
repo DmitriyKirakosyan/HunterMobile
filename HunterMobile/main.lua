@@ -9,6 +9,8 @@ stone.speed = 2
 local enemy_mother = {}
 local enemy_table = {}
 
+enemy_mother.enemy_speed = 0.5
+
 application:setOrientation(Application.LANDSCAPE_LEFT) 
 local displayWidth = application:getContentWidth()
 local displayHeight = application:getContentHeight()
@@ -173,8 +175,22 @@ function init_enemy()
 --  for i = 1, enemy_max_count do
 
     local enemy =  { x = math.random() * displayWidth, y = math.random() * displayHeight };
+    
+    if (enemy.x > displayWidth / 2) then
+      enemy.x = enemy.x + displayWidth * 0.5
+    else
+      enemy.x = enemy.x - displayWidth * 0.5
+    end
+
+    if (enemy.y > displayHeight / 2) then
+      enemy.y = enemy.y + displayHeight * 0.5
+    else
+      enemy.y = enemy.y - displayHeight * 0.5
+    end
+      
+      
     enemy.current_fsm = enemy_mother.enemy_FSM["normal"]["init"]
-    enemy.event = "wait"
+    enemy.event = "run"
     enemy.bitmap = Bitmap.new(Texture.new('res/Skull.png'))
     enemy.bitmap:setX(enemy.x)
     enemy.bitmap:setY(enemy.y)
@@ -206,12 +222,26 @@ enemy_mother.FSM = FSM{
   {"normal", "timer_out", "normal", init_enemy}
 }
 
+function run_to_player(enemy)
+
+  local dx = hunter_bitmap:getX() - enemy.bitmap:getX()  
+  local dy = hunter_bitmap:getY() - enemy.bitmap:getY()  
+
+  local angle = math.atan2(dy, dx);
+  local vx = math.cos(angle) * enemy_mother.enemy_speed
+  local vy = math.sin(angle) * enemy_mother.enemy_speed 
+  enemy.bitmap:setX(enemy.bitmap:getX() + vx)
+  enemy.bitmap:setY(enemy.bitmap:getY() + vy)
+
+end
+
 enemy_mother.enemy_FSM = FSM {
   {"normal", "init", "normal", wait},
   {"normal", "wait", "normal", wait},
   {"normal", "shoted", "normal", kill_me},
   {"normal", "run", "normal", run_to_player}
 }
+
 
 enemy_mother.current_fsm = enemy_mother.FSM["normal"]["created"]
 
@@ -223,7 +253,7 @@ function on_enter_frame(ev)
   enemy_mother.current_fsm = enemy_mother.FSM[ enemy_mother.current_fsm.new ][ enemy_mother.event ]
 
   for i, e in pairs(enemy_table) do
-    e.current_fsm.action()
+    e.current_fsm.action(e)
     e.current_fsm = enemy_mother.enemy_FSM[ e.current_fsm.new ][ e.event ]
   end
 
