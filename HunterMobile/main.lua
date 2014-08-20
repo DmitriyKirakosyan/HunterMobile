@@ -80,6 +80,9 @@ function check_intersection()
         (stone.state == "throwed")
       ) then
       --enemy.bitmap:setColorTransform(0, 0.5, 0)
+      if enemy.arrow_bitmap:getParent() then
+        stage:removeChild(enemy.arrow_bitmap)
+      end
       stage:removeChild(enemy.bitmap)
       table.remove(enemy_table, i)
       enemy_mother.event = "enemy_dead"
@@ -195,7 +198,17 @@ function init_enemy()
     enemy.bitmap:setX(enemy.x)
     enemy.bitmap:setY(enemy.y)
     enemy.bitmap:setColorTransform(1,0,0)
-    stage:addChild(enemy.bitmap)
+
+    enemy.arrow_bitmap = Bitmap.new(Texture.new('res/Skull.png'))
+    enemy.arrow_bitmap:setScaleX(0.3)
+    enemy.arrow_bitmap:setScaleY(0.3)
+    enemy.arrow_bitmap:setColorTransform(1,1,0)
+
+
+--    if ((enemy.x > 0 and enemy.x < displayWidth) and (enemy.y > 0 and enemy.y < displayHeight)) then
+      stage:addChild(enemy.bitmap)
+      stage:addChild(enemy.arrow_bitmap)
+ --   end
 
     table.insert(enemy_table, enemy)
 
@@ -230,8 +243,37 @@ function run_to_player(enemy)
   local angle = math.atan2(dy, dx);
   local vx = math.cos(angle) * enemy_mother.enemy_speed
   local vy = math.sin(angle) * enemy_mother.enemy_speed 
+
   enemy.bitmap:setX(enemy.bitmap:getX() + vx)
   enemy.bitmap:setY(enemy.bitmap:getY() + vy)
+
+  enemy.arrow_bitmap:setX(enemy.bitmap:getX())
+  enemy.arrow_bitmap:setY(enemy.bitmap:getY())
+
+  if (enemy.bitmap:getX() < 0) then
+    enemy.arrow_bitmap:setX(0)
+  end
+
+  if (enemy.bitmap:getX() > displayWidth) then
+    enemy.arrow_bitmap:setX(displayWidth - enemy.arrow_bitmap:getWidth())
+  end
+
+  if (enemy.bitmap:getY() < 0) then
+    enemy.arrow_bitmap:setY(0)
+  end
+
+  if (enemy.bitmap:getY() > displayHeight) then
+    enemy.arrow_bitmap:setY(displayHeight - enemy.arrow_bitmap:getHeight())
+    --enemy.arrow_bitmap:setY(100)
+  end
+
+  if ((enemy.bitmap:getX() > 0 and enemy.bitmap:getX() < displayWidth) and (enemy.bitmap:getY() > 0 and enemy.bitmap:getY() < displayHeight)) then
+    if enemy.arrow_bitmap:getParent() then
+      stage:removeChild(enemy.arrow_bitmap)
+    end
+  else
+    stage:addChild(enemy.arrow_bitmap)
+  end
 
 end
 
