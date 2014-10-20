@@ -17,21 +17,129 @@ local displayHeight = application:getContentHeight()
 
 local end_point_x, end_point_y
 
+local background_texture = Texture.new('res/bkg.png', false, {wrap = Texture.REPEAT})
+local shape_ground = Shape.new();
+
+shape_ground:setFillStyle(Shape.TEXTURE, background_texture)
+shape_ground:moveTo(0,0)
+shape_ground:lineTo(displayWidth, 0)
+shape_ground:lineTo(displayWidth, displayHeight)
+shape_ground:lineTo(0, displayHeight)
+shape_ground:lineTo(0,0)
+shape_ground:endPath()
+stage:addChild(shape_ground)
+
+
+function draw_background()
+	
+end
+
 print('w:' .. displayWidth .. ' h:' .. displayHeight)
 
 print('add hunter')
 
-local hunter_bitmap = Bitmap.new(Texture.new('res/Skull.png'))
+local hunter_stay_texture = Texture.new("res/stay_f.png")
+local hunter_stay_texture_region1 = TextureRegion.new(hunter_stay_texture,  0,  0, 47, 91)
+local hunter_stay_texture_region2 = TextureRegion.new(hunter_stay_texture, 47,  0, 47, 91)
+local hunter_stay_texture_region3 = TextureRegion.new(hunter_stay_texture,  0, 92, 47, 91)
+
+local hunter_stay_bitmap1 = Bitmap.new(hunter_stay_texture_region1)
+local hunter_stay_bitmap2 = Bitmap.new(hunter_stay_texture_region2)
+local hunter_stay_bitmap3 = Bitmap.new(hunter_stay_texture_region3)
+
+local hunter_stay_mc = MovieClip.new {
+	{1, 6, hunter_stay_bitmap1},
+	{7, 13, hunter_stay_bitmap2},
+	{14, 24, hunter_stay_bitmap3}
+}
+
+hunter_stay_mc:setGotoAction(24, 1)
+
+local hunter_f_throw_texture = Texture.new("res/throw_f.png")
+local hunter_f_throw_texture_bitmap = {}
+
+local tx = 0
+local ty = 91
+
+for i = 1,5 do
+	
+	if i == 3 or i == 5 then
+		tx = 0
+		ty = ty + 91
+	end
+			
+	print(i, tx, ty)
+	table.insert(hunter_f_throw_texture_bitmap, Bitmap.new( TextureRegion.new(hunter_f_throw_texture, 0 + tx, 0 + ty, 91, 91) ))
+
+	tx = tx + 91
+	
+end
+
+local hunter_f_throw_mc = MovieClip.new {
+	{1, 5, hunter_f_throw_texture_bitmap[1]},
+	{6, 10, hunter_f_throw_texture_bitmap[2]},
+	{11, 15, hunter_f_throw_texture_bitmap[3]},
+	{16, 20, hunter_f_throw_texture_bitmap[4]},
+	{21, 25, hunter_f_throw_texture_bitmap[5]},
+}
+
+hunter_f_throw_mc:setStopAction(25)
+
+local hunter_f_run_texture = Texture.new("res/run_f.png")
+local hunter_f_run_bitmap = {}
+
+tx = 0
+ty = 0
+
+for i = 1,12 do
+	
+	if i == 4 or i == 8 then
+		tx = 0
+		ty = ty + 91
+	end
+			
+	print(i, tx, ty)
+	table.insert(hunter_f_run_bitmap, Bitmap.new( TextureRegion.new(hunter_f_run_texture, 0 + tx, 0 + ty, 91, 91) ))
+
+	tx = tx + 91
+	
+end
+
+
+local hunter_f_run_mc = MovieClip.new {
+	{1, 5, hunter_f_throw_texture_bitmap[1]},
+	{6, 10, hunter_f_throw_texture_bitmap[2]},
+	{11, 15, hunter_f_throw_texture_bitmap[3]},
+	{16, 20, hunter_f_throw_texture_bitmap[4]},
+	{21, 25, hunter_f_throw_texture_bitmap[5]},
+}
+
+hunter_stay_mc:setGotoAction(24, 1)
+
+function on_throw_animation_stop()
+  local x = hunter_bitmap:getX();
+  local y = hunter_bitmap:getY();
+  
+  stage:removeChild(hunter_bitmap)
+  
+  hunter_bitmap = hunter_stay_mc
+  hunter_f_throw_mc:setX(x)
+  hunter_f_throw_mc:setY(y)
+  
+  stage:addChild(hunter_bitmap)
+end
+
+hunter_f_throw_mc:addEventListener(Event.COMPLETE, on_throw_animation_stop)
+
+hunter_bitmap = hunter_stay_mc
+--hunter_bitmap = hunter_f_throw_mc
 
 hunter_bitmap:setX( displayWidth / 2 )
 hunter_bitmap:setY( displayHeight / 2 )
 
 stage:addChild(hunter_bitmap)
 
-stone.bitmap = Bitmap.new(Texture.new('res/Skull.png'))
-stone.bitmap:setColorTransform(0,1,1)
-stone.bitmap:setScaleX(0.2)
-stone.bitmap:setScaleY(0.2)
+stone.bitmap = Bitmap.new(Texture.new('res/stone.png'))
 stone.bitmap:setVisible(false)
 stage:addChild(stone.bitmap)
 
@@ -141,7 +249,20 @@ end
 function throw_stone()
   --print('throw stone')
   stone.event = "fly"
+  
+  local x = hunter_bitmap:getX();
+  local y = hunter_bitmap:getY();
+  
+  stage:removeChild(hunter_bitmap)
+  
+  hunter_bitmap = hunter_f_throw_mc
+  hunter_f_throw_mc:setX(x)
+  hunter_f_throw_mc:setY(y)
+  hunter_f_throw_mc:gotoAndPlay(1)
+  
+  stage:addChild(hunter_bitmap)
 end
+
 
 function fly()
   --print("fly")
@@ -289,6 +410,8 @@ enemy_mother.current_fsm = enemy_mother.FSM["normal"]["created"]
 
 
 function on_enter_frame(ev)
+
+  draw_background()
 
   enemy_mother.current_fsm.action()
   enemy_mother.state = enemy_mother.current_fsm.new

@@ -3,6 +3,11 @@
   <imageScales/>
  </properties>
  <folder name="res">
+  <file source="res/run_f.png"/>
+  <file source="res/throw_f.png"/>
+  <file source="res/stay_f.png"/>
+  <file source="res/stone.png"/>
+  <file source="res/bkg.png"/>
   <file source="res/Skull.png"/>
  </folder>
  <folder name="src">
